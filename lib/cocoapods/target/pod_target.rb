@@ -357,12 +357,30 @@ module Pod
     end
 
     # @param  [Specification] test_spec
-    #         The test spec this embed frameworks script path is for.
+    #         The test spec this copy resources script path is for.
     #
     # @return [Pathname] The absolute path of the copy resources script for the given test type.
     #
     def copy_resources_script_path_for_test_spec(test_spec)
       support_files_dir + "#{test_target_label(test_spec)}-resources.sh"
+    end
+
+    # @param  [Specification] test_spec
+    #         The test spec this copy resources script path is for.
+    #
+    # @return [Pathname] The absolute path of the copy resources script input file list for the given test type.
+    #
+    def copy_resources_script_input_files_path_for_test_spec(test_spec)
+      support_files_dir + "#{test_target_label(test_spec)}-resources-input-files.xcfilelist"
+    end
+
+    # @param  [Specification] test_spec
+    #         The test spec this copy resources script path is for.
+    #
+    # @return [Pathname] The absolute path of the copy resources script output file list for the given test type.
+    #
+    def copy_resources_script_output_files_path_for_test_spec(test_spec)
+      support_files_dir + "#{test_target_label(test_spec)}-resources-output-files.xcfilelist"
     end
 
     # @param  [Specification] test_spec
@@ -372,6 +390,24 @@ module Pod
     #
     def embed_frameworks_script_path_for_test_spec(test_spec)
       support_files_dir + "#{test_target_label(test_spec)}-frameworks.sh"
+    end
+
+    # @param  [Specification] test_spec
+    #         The test spec this embed frameworks script path is for.
+    #
+    # @return [Pathname] The absolute path of the embed frameworks script input file list for the given test type.
+    #
+    def embed_frameworks_script_input_files_path_for_test_spec(test_spec)
+      support_files_dir + "#{test_target_label(test_spec)}-frameworks-input-files.xcfilelist"
+    end
+
+    # @param  [Specification] test_spec
+    #         The test spec this embed frameworks script path is for.
+    #
+    # @return [Pathname] The absolute path of the embed frameworks script output file list for the given test type.
+    #
+    def embed_frameworks_script_output_files_path_for_test_spec(test_spec)
+      support_files_dir + "#{test_target_label(test_spec)}-frameworks-output-files.xcfilelist"
     end
 
     # @param  [Specification] test_spec
