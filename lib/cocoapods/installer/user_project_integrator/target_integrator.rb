@@ -52,7 +52,7 @@ module Pod
         # @return [Boolean] whether to use input/output paths for build phase scripts
         #
         attr_reader :use_input_output_paths
-        alias_method :use_input_output_paths?, :use_input_output_paths
+        alias use_input_output_paths? use_input_output_paths
 
         # Init a new TargetIntegrator
         #

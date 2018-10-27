@@ -119,9 +119,10 @@ module Pod
         # @return [void]
         #
         def share_development_pod_schemes(project)
-          development_pod_targets.select do |target|
+          targets = development_pod_targets.select do |target|
             target.should_build? && share_scheme_for_development_pod?(target.pod_name)
-          end.each do |pod_target|
+          end
+          targets.each do |pod_target|
             Xcodeproj::XCScheme.share_scheme(project.path, pod_target.label)
             pod_target.test_specs.each do |test_spec|
               Xcodeproj::XCScheme.share_scheme(project.path, pod_target.test_target_label(test_spec))
