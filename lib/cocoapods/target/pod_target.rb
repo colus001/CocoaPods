@@ -226,7 +226,7 @@ module Pod
     #
     def defines_module?
       return @defines_module if defined?(@defines_module)
-      return @defines_module = true if uses_swift? || type.framework?
+      return @defines_module = true if uses_swift? || build_as_framework?
 
       explicit_target_definitions = target_definitions.select { |td| td.dependencies.any? { |d| d.root_name == pod_name } }
       tds_by_answer = explicit_target_definitions.group_by { |td| td.build_pod_as_module?(pod_name) }
@@ -287,7 +287,7 @@ module Pod
                           end
             FrameworkPaths.new(framework_source, dsym_source)
           end
-          if !file_accessor.spec.test_specification? && should_build? && type.dynamic_framework?
+          if !file_accessor.spec.test_specification? && should_build? && build_as_dynamic_framework?
             frameworks << FrameworkPaths.new(build_product_path('${BUILT_PRODUCTS_DIR}'))
           end
           hash[file_accessor.spec.name] = frameworks
@@ -345,7 +345,7 @@ module Pod
     #
     def module_map_path
       basename = "#{label}.modulemap"
-      if type.framework?
+      if build_as_framework?
         super
       elsif file_accessors.any?(&:module_map)
         build_headers.root + product_module_name + basename

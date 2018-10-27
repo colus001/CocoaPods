@@ -414,7 +414,7 @@ module Pod
           embedded_targets = aggregate_targets.select(&:requires_host_target?)
           analyze_host_targets_in_podfile(aggregate_targets, embedded_targets)
 
-          use_frameworks_embedded_targets, non_use_frameworks_embedded_targets = embedded_targets.partition { |et| et.type.static?}
+          use_frameworks_embedded_targets, non_use_frameworks_embedded_targets = embedded_targets.partition(&:build_as_static?)
           aggregate_targets = aggregate_targets.map do |aggregate_target|
             # For targets that require frameworks, we always have to copy their pods to their
             # host targets because those frameworks will all be loaded from the host target's bundle

@@ -72,7 +72,7 @@ module Pod
         #
         def scope_by_build_type
           scope_if_necessary(group_by { |v| v.type.packaging }.map(&:scope_by_linkage)) do |variant|
-            variant.packaging
+            variant.type.packaging
           end
         end
 
@@ -81,7 +81,7 @@ module Pod
         #
         def scope_by_linkage
           scope_if_necessary(group_by { |v| v.type.linkage }.map(&:scope_by_platform)) do |variant|
-            variant.linkage
+            variant.type.linkage
           end
         end
 
