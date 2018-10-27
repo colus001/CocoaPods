@@ -271,7 +271,7 @@ module Pod
 
           it 'adds framework file references for framework pod targets that require building' do
             @orangeframework_pod_target.stubs(:requires_frameworks?).returns(true)
-            @coconut_ios_pod_target.stubs(:requires_frameworks?).returns(true)
+            @coconut_ios_pod_target.type.stubs(:requires_frameworks?).returns(true)
             @coconut_ios_pod_target.stubs(:should_build?).returns(true)
             pod_generator_result = @generator.generate!
             native_target = pod_generator_result.project.targets.find { |t| t.name == 'CoconutLib-iOS' }

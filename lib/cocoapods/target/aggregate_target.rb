@@ -66,8 +66,9 @@ module Pod
     # @param [Hash{String=>Array<PodTarget>}] pod_targets_for_build_configuration @see #pod_targets_for_build_configuration
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, target_definition,
-                   client_root, user_project, user_target_uuids, pod_targets_for_build_configuration)
-      super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform)
+                   client_root, user_project, user_target_uuids, pod_targets_for_build_configuration,
+                   type: Type.new(linkage: host_requires_frameworks ? :dynamic : :static, packaging: host_requires_frameworks ? :framework : :library))
+      super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, type: type)
       raise "Can't initialize an AggregateTarget without a TargetDefinition!" if target_definition.nil?
       raise "Can't initialize an AggregateTarget with an abstract TargetDefinition!" if target_definition.abstract?
       @target_definition = target_definition
@@ -93,7 +94,7 @@ module Pod
         (before + after).uniq
       end
       AggregateTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform,
-                          target_definition, client_root, user_project, user_target_uuids, merged).tap do |aggregate_target|
+                          target_definition, client_root, user_project, user_target_uuids, merged, type: type).tap do |aggregate_target|
         aggregate_target.search_paths_aggregate_targets.concat(search_paths_aggregate_targets).freeze
       end
     end
@@ -246,7 +247,7 @@ module Pod
     def resource_paths_by_config
       @resource_paths_by_config ||= begin
         relevant_pod_targets = pod_targets.reject do |pod_target|
-          pod_target.should_build? && pod_target.requires_frameworks? && !pod_target.static_framework?
+          pod_target.should_build? && pod_target.type.dynamic_framework?
         end
         user_build_configurations.keys.each_with_object({}) do |config, resources_by_config|
           targets = relevant_pod_targets & pod_targets_for_build_configuration(config)

@@ -414,7 +414,7 @@ module Pod
           embedded_targets = aggregate_targets.select(&:requires_host_target?)
           analyze_host_targets_in_podfile(aggregate_targets, embedded_targets)
 
-          use_frameworks_embedded_targets, non_use_frameworks_embedded_targets = embedded_targets.partition(&:requires_frameworks?)
+          use_frameworks_embedded_targets, non_use_frameworks_embedded_targets = embedded_targets.partition { |et| et.type.static?}
           aggregate_targets = aggregate_targets.map do |aggregate_target|
             # For targets that require frameworks, we always have to copy their pods to their
             # host targets because those frameworks will all be loaded from the host target's bundle
@@ -469,9 +469,10 @@ module Pod
         pod_targets_for_build_configuration = filter_pod_targets_for_target_definition(target_definition, pod_targets,
                                                                                        resolver_specs_by_target,
                                                                                        build_configurations)
+        type = target_definition.uses_frameworks? ? Target::Type.static_framework : Target::Type.static_library
         AggregateTarget.new(sandbox, target_definition.uses_frameworks?, user_build_configurations, archs, platform,
                             target_definition, client_root, user_project, user_target_uuids,
-                            pod_targets_for_build_configuration)
+                            pod_targets_for_build_configuration, type: type)
       end
 
       # @return [Array<PodTarget>] The model representations of pod targets.
@@ -569,7 +570,8 @@ module Pod
               library_specs = all_specs_by_type[:library] || []
               test_specs = all_specs_by_type[:test] || []
               app_specs = all_specs_by_type[:app] || []
-              pod_variant = PodVariant.new(library_specs, test_specs, app_specs, target_definition.platform, target_definition.uses_frameworks?)
+              target_type = Target::Type.new(linkage: (!target_definition.uses_frameworks? || root_spec.static_framework) ? :static : :dynamic, packaging: target_definition.uses_frameworks? ? :framework : :library)
+              pod_variant = PodVariant.new(library_specs, test_specs, app_specs, target_definition.platform, target_type)
               hash[root_spec] ||= {}
               (hash[root_spec][pod_variant] ||= []) << target_definition
               pod_variant_spec = hash[root_spec].keys.find { |k| k == pod_variant }
@@ -581,7 +583,7 @@ module Pod
           pod_targets = distinct_targets.flat_map do |_root, target_definitions_by_variant|
             suffixes = PodVariantSet.new(target_definitions_by_variant.keys).scope_suffixes
             target_definitions_by_variant.flat_map do |variant, target_definitions|
-              generate_pod_target(target_definitions, target_inspections, variant.specs + variant.test_specs + variant.app_specs, :scope_suffix => suffixes[variant])
+              generate_pod_target(target_definitions, target_inspections, variant.specs + variant.test_specs + variant.app_specs, type: variant.type, :scope_suffix => suffixes[variant])
             end
           end
 
@@ -612,6 +614,7 @@ module Pod
           resolver_specs_by_target.flat_map do |target_definition, specs|
             grouped_specs = specs.group_by(&:root).values.uniq
             pod_targets = grouped_specs.flat_map do |pod_specs|
+              target_type = Target::Type.new(linkage: (!target_definition.uses_frameworks? || pod_specs.first.root.static_framework) ? :static : :dynamic, packaging: target_definition.uses_frameworks? ? :framework : :library)
               generate_pod_target([target_definition], target_inspections, pod_specs.map(&:spec)).scoped(dedupe_cache)
             end
 
@@ -638,7 +641,7 @@ module Pod
         dependencies.map do |root_spec, deps|
           pod_targets_by_name[root_spec.name].find do |t|
             next false if t.platform.symbolic_name != target.platform.symbolic_name ||
-                t.requires_frameworks? != target.requires_frameworks?
+                t.host_requires_frameworks? != target.host_requires_frameworks? # rather than target type or requires_frameworks? since we want to group by what was specified in that _target definition_
             spec_names = t.specs.map(&:name)
             deps.all? { |dep| spec_names.include?(dep.name) }
           end
@@ -693,7 +696,7 @@ module Pod
       #
       # @return [PodTarget]
       #
-      def generate_pod_target(target_definitions, target_inspections, specs, scope_suffix: nil)
+      def generate_pod_target(target_definitions, target_inspections, specs, scope_suffix: nil, type: nil)
         target_requires_64_bit = target_definitions.all? { |td| requires_64_bit_archs?(td.platform) }
         if installation_options.integrate_targets?
           target_inspections = target_inspections.select { |t, _| target_definitions.include?(t) }.values
@@ -711,7 +714,7 @@ module Pod
         platform = determine_platform(specs, target_definitions, host_requires_frameworks)
         file_accessors = create_file_accessors(specs, platform)
         PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs,
-                      target_definitions, file_accessors, scope_suffix)
+                      target_definitions, file_accessors, scope_suffix, type: type)
       end
 
       # Creates the file accessors for a given pod.

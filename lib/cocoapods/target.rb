@@ -1,4 +1,5 @@
 require 'cocoapods/target/build_settings'
+require 'cocoapods/target/type'
 
 module Pod
   # Model class which describes a Pods target.
@@ -40,6 +41,9 @@ module Pod
     #
     attr_reader :build_settings
 
+    attr_reader :type
+    # private :type
+
     # Initialize a new target
     #
     # @param [Sandbox] sandbox @see #sandbox
@@ -48,12 +52,14 @@ module Pod
     # @param [Array<String>] archs @see #archs
     # @param [Platform] platform @see #platform
     #
-    def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform)
+    def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform,
+      type: Type.new(linkage: host_requires_frameworks ? :dynamic : :static, packaging: host_requires_frameworks ? :framework : :library))
       @sandbox = sandbox
       @host_requires_frameworks = host_requires_frameworks
       @user_build_configurations = user_build_configurations
       @archs = archs
       @platform = platform
+      @type = type
 
       @build_settings = create_build_settings
     end
@@ -87,7 +93,7 @@ module Pod
     # @return [Boolean] Whether the target should build a static framework.
     #
     def static_framework?
-      false
+      type.static_framework?
     end
 
     # @return [String] the name to use for the source code module constructed
@@ -101,7 +107,7 @@ module Pod
     # @return [String] the name of the product.
     #
     def product_name
-      if requires_frameworks?
+      if type.framework?
         framework_name
       else
         static_library_name
@@ -113,7 +119,7 @@ module Pod
     #         and #product_module_name or #label.
     #
     def product_basename
-      if requires_frameworks?
+      if type.framework?
         product_module_name
       else
         label
@@ -139,10 +145,10 @@ module Pod
     end
 
     # @return [Symbol] either :framework or :static_library, depends on
-    #         #requires_frameworks?.
+    #         #type.framework?.
     #
     def product_type
-      requires_frameworks? ? :framework : :static_library
+      type.framework? ? :framework : :static_library
     end
 
     # @return [String] A string suitable for debugging.
@@ -155,11 +161,13 @@ module Pod
 
     # @!group Framework support
 
+    # @deprecated
+    #
     # @return [Boolean] whether the generated target needs to be implemented
     #         as a framework
     #
     def requires_frameworks?
-      host_requires_frameworks? || false
+      type.framework?
     end
 
     #-------------------------------------------------------------------------#

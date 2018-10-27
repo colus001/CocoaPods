@@ -70,8 +70,9 @@ module Pod
     # @param [String] scope_suffix @see #scope_suffix
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs,
-                   target_definitions, file_accessors = [], scope_suffix = nil)
-      super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform)
+                   target_definitions, file_accessors = [], scope_suffix = nil,
+                   type: Type.new(linkage: host_requires_frameworks ? :dynamic : :static, packaging: host_requires_frameworks ? :framework : :library))
+      super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, type: type)
       raise "Can't initialize a PodTarget without specs!" if specs.nil? || specs.empty?
       raise "Can't initialize a PodTarget without TargetDefinition!" if target_definitions.nil? || target_definitions.empty?
       raise "Can't initialize a PodTarget with only abstract TargetDefinitions!" if target_definitions.all?(&:abstract?)
@@ -104,7 +105,8 @@ module Pod
         if cache[cache_key]
           cache[cache_key]
         else
-          target = PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs, [target_definition], file_accessors, target_definition.label)
+          target = PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs, [target_definition], file_accessors, target_definition.label,
+            type: type)
           target.dependent_targets = dependent_targets.flat_map { |pt| pt.scoped(cache) }.select { |pt| pt.target_definitions == [target_definition] }
           target.test_dependent_targets_by_spec_name = Hash[test_dependent_targets_by_spec_name.map do |spec_name, test_pod_targets|
             scoped_test_pod_targets = test_pod_targets.flat_map do |test_pod_target|
@@ -216,12 +218,6 @@ module Pod
       end
     end
 
-    # @return [Boolean] Whether the target should build a static framework.
-    #
-    def static_framework?
-      requires_frameworks? && root_spec.static_framework
-    end
-
     # @return [Boolean] Whether the target defines a "module"
     #         (and thus will need a module map and umbrella header).
     #
@@ -230,7 +226,7 @@ module Pod
     #
     def defines_module?
       return @defines_module if defined?(@defines_module)
-      return @defines_module = true if uses_swift? || requires_frameworks?
+      return @defines_module = true if uses_swift? || type.framework?
 
       explicit_target_definitions = target_definitions.select { |td| td.dependencies.any? { |d| d.root_name == pod_name } }
       tds_by_answer = explicit_target_definitions.group_by { |td| td.build_pod_as_module?(pod_name) }
@@ -291,7 +287,7 @@ module Pod
                           end
             FrameworkPaths.new(framework_source, dsym_source)
           end
-          if !file_accessor.spec.test_specification? && should_build? && requires_frameworks? && !static_framework?
+          if !file_accessor.spec.test_specification? && should_build? && type.dynamic_framework?
             frameworks << FrameworkPaths.new(build_product_path('${BUILT_PRODUCTS_DIR}'))
           end
           hash[file_accessor.spec.name] = frameworks
@@ -349,7 +345,7 @@ module Pod
     #
     def module_map_path
       basename = "#{label}.modulemap"
-      if requires_frameworks?
+      if type.framework?
         super
       elsif file_accessors.any?(&:module_map)
         build_headers.root + product_module_name + basename

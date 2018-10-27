@@ -49,24 +49,6 @@ require 'spec_helper/mock_source'     # Allows building a mock source from Spec 
 
 #-----------------------------------------------------------------------------#
 
-# README!
-#
-# Override {Specification#source} to return sources from fixtures and limit
-# network connections.
-#
-module Pod
-  class Specification
-    def source
-      fixture = SpecHelper.fixture("integration/#{name}")
-      result = super
-      result[:git] = fixture.to_s if fixture.exist?
-      result
-    end
-  end
-end
-
-#-----------------------------------------------------------------------------#
-
 ENV['SKIP_SETUP'] = 'true'
 if ENV['SKIP_XCODEBUILD'].nil? && Pod::Executable.which('xcodebuild').nil?
   ENV['SKIP_XCODEBUILD'] = 'true'

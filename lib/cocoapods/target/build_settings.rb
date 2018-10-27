@@ -205,7 +205,7 @@ module Pod
 
       # @return [String]
       define_build_settings_method :code_sign_identity, :build_setting => true do
-        return unless target.requires_frameworks?
+        return unless target.type.dynamic?
         return unless target.platform.to_sym == :osx
         ''
       end
@@ -524,7 +524,7 @@ module Pod
 
         # @return [Array<String>]
         define_build_settings_method :frameworks, :memoized => true, :sorted => true, :uniqued => true do
-          return [] if (!target.requires_frameworks? || target.static_framework?) && library_xcconfig?
+          return [] if target.type.static? && library_xcconfig?
 
           frameworks = vendored_dynamic_frameworks.map { |l| File.basename(l, '.framework') }
           frameworks.concat vendored_static_frameworks.map { |l| File.basename(l, '.framework') } if library_xcconfig?
@@ -537,22 +537,22 @@ module Pod
         # @return [Array<String>]
         define_build_settings_method :static_frameworks_to_import, :memoized => true do
           static_frameworks_to_import = []
-          static_frameworks_to_import.concat vendored_static_frameworks.map { |f| File.basename(f, '.framework') } unless target.should_build? && target.requires_frameworks? && !target.static_framework?
-          static_frameworks_to_import << target.product_basename if target.should_build? && target.requires_frameworks? && target.static_framework?
+          static_frameworks_to_import.concat vendored_static_frameworks.map { |f| File.basename(f, '.framework') } unless target.should_build? && target.type.dynamic_framework?
+          static_frameworks_to_import << target.product_basename if target.should_build? && target.type.static_framework?
           static_frameworks_to_import
         end
 
         # @return [Array<String>]
         define_build_settings_method :dynamic_frameworks_to_import, :memoized => true do
           dynamic_frameworks_to_import = vendored_dynamic_frameworks.map { |f| File.basename(f, '.framework') }
-          dynamic_frameworks_to_import << target.product_basename if target.should_build? && target.requires_frameworks? && !target.static_framework?
+          dynamic_frameworks_to_import << target.product_basename if target.should_build? && target.type.dynamic_framework?
           dynamic_frameworks_to_import.concat consumer_frameworks
           dynamic_frameworks_to_import
         end
 
         # @return [Array<String>]
         define_build_settings_method :weak_frameworks, :memoized => true do
-          return [] if (!target.requires_frameworks? || target.static_framework?) && library_xcconfig?
+          return [] if (target.type.static?) && library_xcconfig?
 
           weak_frameworks = spec_consumers.flat_map(&:weak_frameworks)
           weak_frameworks.concat dependent_targets.flat_map { |pt| pt.build_settings.weak_frameworks_to_import }
@@ -580,7 +580,7 @@ module Pod
 
         # @return [String]
         define_build_settings_method :framework_header_search_path, :memoized => true do
-          return unless target.requires_frameworks?
+          return unless target.type.framework?
           "#{target.build_product_path}/Headers"
         end
 
@@ -593,7 +593,7 @@ module Pod
         define_build_settings_method :framework_search_paths_to_import, :memoized => true do
           paths = framework_search_paths_to_import_developer_frameworks(consumer_frameworks)
           paths.concat vendored_framework_search_paths
-          return paths unless target.requires_frameworks? && target.should_build?
+          return paths unless target.type.framework? && target.should_build?
 
           paths + [target.configuration_build_dir(CONFIGURATION_BUILD_DIR_VARIABLE)]
         end
@@ -614,7 +614,7 @@ module Pod
 
         # @return [Array<String>]
         define_build_settings_method :libraries, :memoized => true, :sorted => true, :uniqued => true do
-          return [] if library_xcconfig? && (!target.requires_frameworks? || target.static_framework?)
+          return [] if library_xcconfig? && (target.type.static?)
 
           libraries = libraries_to_import.dup
           libraries.concat dependent_targets.flat_map { |pt| pt.build_settings.dynamic_libraries_to_import }
@@ -625,7 +625,7 @@ module Pod
         # @return [Array<String>]
         define_build_settings_method :static_libraries_to_import, :memoized => true do
           static_libraries_to_import = vendored_static_libraries.map { |l| File.basename(l, l.extname).sub(/\Alib/, '') }
-          static_libraries_to_import << target.product_basename if target.should_build? && !target.requires_frameworks?
+          static_libraries_to_import << target.product_basename if target.should_build? && target.type.static_framework?
           static_libraries_to_import
         end
 
@@ -642,7 +642,7 @@ module Pod
 
         # @return [Array<String>]
         define_build_settings_method :library_search_paths, :build_setting => true, :memoized => true, :sorted => true, :uniqued => true do
-          return [] if library_xcconfig? && (!target.requires_frameworks? || target.static_framework?)
+          return [] if library_xcconfig? && (target.type.static?)
 
           vendored = library_search_paths_to_import.dup
           vendored.concat dependent_targets.flat_map { |t| t.build_settings.vendored_dynamic_library_search_paths }
@@ -677,7 +677,7 @@ module Pod
         # @return [Array<String>]
         define_build_settings_method :library_search_paths_to_import, :memoized => true do
           vendored_library_search_paths = vendored_static_library_search_paths + vendored_dynamic_library_search_paths
-          return vendored_library_search_paths if target.requires_frameworks? || !target.should_build?
+          return vendored_library_search_paths if target.type.framework? || !target.should_build?
 
           vendored_library_search_paths << target.configuration_build_dir(CONFIGURATION_BUILD_DIR_VARIABLE)
         end
@@ -694,7 +694,6 @@ module Pod
         # @return [Array<String>]
         define_build_settings_method :module_map_file_to_import, :memoized => true do
           return unless target.should_build?
-          return if target.requires_frameworks?
           return unless target.defines_module?
 
           if target.uses_swift?
@@ -732,7 +731,7 @@ module Pod
 
           flags = super()
           flags << '-suppress-warnings' if target.inhibit_warnings? && library_xcconfig?
-          if !target.requires_frameworks? && target.defines_module? && library_xcconfig?
+          if !target.type.framework? && target.defines_module? && library_xcconfig?
             flags.concat %w( -import-underlying-module -Xcc -fmodule-map-file=${SRCROOT}/${MODULEMAP_FILE} )
           end
           flags
@@ -747,7 +746,7 @@ module Pod
 
         # @return [Array<String>]
         define_build_settings_method :swift_include_paths_to_import, :memoized => true do
-          return [] unless target.uses_swift? && !target.requires_frameworks?
+          return [] unless target.uses_swift? && !target.type.framework?
 
           [target.configuration_build_dir(CONFIGURATION_BUILD_DIR_VARIABLE)]
         end
@@ -938,14 +937,14 @@ module Pod
         define_build_settings_method :header_search_paths, :build_setting => true, :memoized => true, :sorted => true, :uniqued => true do
           paths = []
 
-          if !target.requires_frameworks? || !pod_targets.all?(&:should_build?)
+          if !target.type.framework? || !pod_targets.all?(&:should_build?)
             paths.concat target.sandbox.public_headers.search_paths(target.platform)
           end
 
           # Make frameworks headers discoverable with any syntax (quotes,
           # brackets, @import, etc.)
           paths.concat pod_targets.
-            select { |pt| pt.requires_frameworks? && pt.should_build? }.
+            select { |pt| pt.type.framework? && pt.should_build? }.
             map { |pt| pt.build_settings.framework_header_search_path }
 
           paths.concat target.search_paths_aggregate_targets.flat_map { |at| at.build_settings(configuration_name).header_search_paths }
@@ -962,7 +961,7 @@ module Pod
           silenced_headers = []
           silenced_frameworks = []
           pod_targets_inhibiting_warnings.each do |pt|
-            if pt.requires_frameworks? && pt.should_build?
+            if pt.type.framework? && pt.should_build?
               silenced_headers.append pt.build_settings.framework_header_search_path
             else
               silenced_headers.concat pt.build_settings.public_header_search_paths
@@ -1022,7 +1021,7 @@ module Pod
 
         # @return [Array<String>]
         define_build_settings_method :ld_runpath_search_paths, :build_setting => true, :memoized => true, :uniqued => true do
-          return unless target.requires_frameworks? || any_vendored_dynamic_artifacts?
+          return unless target.type.dynamic? || any_vendored_dynamic_artifacts?
           symbol_type = target.user_targets.map(&:symbol_type).uniq.first
           test_bundle = symbol_type == :octest_bundle || symbol_type == :unit_test_bundle || symbol_type == :ui_test_bundle
           _ld_runpath_search_paths(:requires_host_target => target.requires_host_target?, :test_bundle => test_bundle)
@@ -1039,8 +1038,7 @@ module Pod
 
         # @return [Boolean]
         define_build_settings_method :requires_objc_linker_flag?, :memoized => true do
-          !target.requires_frameworks? ||
-            pod_targets.any?(&:static_framework?) ||
+          pod_targets.any?(&:static_framework?) ||
             pod_targets.flat_map(&:file_accessors).any? { |fa| !fa.vendored_static_artifacts.empty? }
         end
 
