@@ -198,7 +198,6 @@ module Pod
     def podfile
       @podfile ||= Podfile.from_file(podfile_path) if podfile_path
     end
-    attr_writer :podfile
 
     # @return [Lockfile] The Lockfile to use for the current execution.
     # @return [Nil] If no Lockfile is available.

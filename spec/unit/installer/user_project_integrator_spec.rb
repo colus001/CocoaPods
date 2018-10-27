@@ -20,7 +20,8 @@ module Pod
         user_build_configurations = { 'Release' => :release, 'Debug' => :debug }
         @target = AggregateTarget.new(config.sandbox, false, user_build_configurations, [], Platform.ios, @podfile.target_definitions['SampleProject'], sample_project_path.dirname, Xcodeproj::Project.open(@sample_project_path), ['A346496C14F9BE9A0080D870'], {})
         @empty_library = AggregateTarget.new(config.sandbox, false, user_build_configurations, [], Platform.ios, @podfile.target_definitions[:empty], sample_project_path.dirname, @target.user_project, ['C0C495321B9E5C47004F9854'], {})
-        @integrator = UserProjectIntegrator.new(@podfile, config.sandbox, temporary_directory, [@target, @empty_library])
+        @use_input_output_paths = !@podfile.installation_options.disable_input_output_paths
+        @integrator = UserProjectIntegrator.new(@podfile, config.sandbox, temporary_directory, [@target, @empty_library], @use_input_output_paths)
       end
 
       #-----------------------------------------------------------------------#
@@ -66,7 +67,7 @@ module Pod
             @target.stubs(:user_targets).returns([user_target])
 
             @target.xcconfigs['Release'] = { 'GCC_PREPROCESSOR_DEFINITIONS' => 'COCOAPODS=1' }
-            @integrator = UserProjectIntegrator.new(@podfile, config.sandbox, temporary_directory, [@target])
+            @integrator = UserProjectIntegrator.new(@podfile, config.sandbox, temporary_directory, [@target], @use_input_output_paths)
 
             @integrator.unstub(:warn_about_xcconfig_overrides)
             @integrator.send(:warn_about_xcconfig_overrides)

@@ -17,15 +17,9 @@ module Pod
 
         # @return [AnalysisResult]
         #
-        def create_validator(sandbox, podfile, lockfile, integrate_targets = false)
-          installation_options = Installer::InstallationOptions.new.tap do |options|
-            options.integrate_targets = integrate_targets
-          end
-
+        def create_validator(sandbox, podfile, lockfile)
           sandbox.specifications_root.mkpath
-          @analyzer = Analyzer.new(sandbox, podfile, lockfile).tap do |analyzer|
-            analyzer.installation_options = installation_options
-          end
+          @analyzer = Analyzer.new(sandbox, podfile, lockfile, nil, true, false)
           result = @analyzer.analyze
 
           aggregate_targets = result.targets
@@ -46,6 +40,7 @@ module Pod
             config.repos_dir = fixture_path + 'spec-repos'
             podfile = Pod::Podfile.new do
               platform :ios, '8.0'
+              install! 'cocoapods', :integrate_targets => false
               project 'SampleProject/SampleProject'
               pod 'BananaLib', :path => (fixture_path + 'banana-lib').to_s
               target 'SampleProject'
@@ -65,6 +60,7 @@ module Pod
             config.repos_dir = fixture_path + 'spec-repos'
             podfile = Pod::Podfile.new do
               platform :ios, '8.0'
+              install! 'cocoapods', :integrate_targets => false
               project 'SampleProject/SampleProject'
               pod 'BananaLib',       :path => (fixture_path + 'banana-lib').to_s
               pod 'OrangeFramework', :path => (fixture_path + 'orange-framework').to_s
@@ -85,6 +81,7 @@ module Pod
             config.repos_dir = fixture_path + 'spec-repos'
             podfile = Pod::Podfile.new do
               platform :ios, '8.0'
+              install! 'cocoapods', :integrate_targets => false
               project 'SampleProject/SampleProject'
               use_frameworks!
               pod 'BananaLib',       :path => (fixture_path + 'banana-lib').to_s
@@ -116,7 +113,7 @@ module Pod
             end
             lockfile = generate_lockfile
 
-            @validator = create_validator(config.sandbox, podfile, lockfile, true)
+            @validator = create_validator(config.sandbox, podfile, lockfile)
             should.not.raise(Informative) { @validator.validate! }
           end
         end

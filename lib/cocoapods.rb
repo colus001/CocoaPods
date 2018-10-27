@@ -45,6 +45,7 @@ module Pod
   autoload :ExternalSources,           'cocoapods/external_sources'
   autoload :Installer,                 'cocoapods/installer'
   autoload :HooksManager,              'cocoapods/hooks_manager'
+  autoload :Podfile,                   'cocoapods/podfile'
   autoload :PodTarget,                 'cocoapods/target/pod_target'
   autoload :Project,                   'cocoapods/project'
   autoload :Resolver,                  'cocoapods/resolver'

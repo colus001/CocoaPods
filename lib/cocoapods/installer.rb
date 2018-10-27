@@ -41,9 +41,6 @@ module Pod
     autoload :Xcode,                      'cocoapods/installer/xcode'
 
     include Config::Mixin
-    include InstallationOptions::Mixin
-
-    delegate_installation_options { podfile }
 
     # @return [Sandbox] The sandbox where the Pods should be installed.
     #
@@ -210,11 +207,12 @@ module Pod
         @target_installation_results = pod_project_generation_result.target_installation_results
         @pods_project = pod_project_generation_result.project
         run_podfile_post_install_hooks
-        generator.write(@pods_project, @target_installation_results)
+        Xcode::PodsProjectGenerator.write(@pods_project, target_installation_results, @sandbox.project_path, installation_options.deterministic_uuids?)
         generator.share_development_pod_schemes(@pods_project)
         write_lockfiles
       end
     end
+
     #-------------------------------------------------------------------------#
 
     public
@@ -269,9 +267,7 @@ module Pod
     end
 
     def create_analyzer(plugin_sources = nil)
-      Analyzer.new(sandbox, podfile, lockfile, plugin_sources, has_dependencies?, update).tap do |analyzer|
-        analyzer.installation_options = installation_options
-      end
+      Analyzer.new(sandbox, podfile, lockfile, plugin_sources, has_dependencies?, update)
     end
 
     # Ensures that the white-listed build configurations are known to prevent
@@ -641,7 +637,7 @@ module Pod
     def integrate_user_project
       UI.section "Integrating client #{'project'.pluralize(aggregate_targets.map(&:user_project_path).uniq.count)}" do
         installation_root = config.installation_root
-        integrator = UserProjectIntegrator.new(podfile, sandbox, installation_root, aggregate_targets)
+        integrator = UserProjectIntegrator.new(podfile, sandbox, installation_root, aggregate_targets, !installation_options.disable_input_output_paths?)
         integrator.integrate!
       end
     end
@@ -735,6 +731,12 @@ module Pod
     #
     def sandbox_state
       analysis_result.sandbox_state
+    end
+
+    # @return [InstallationOptions] the installation options to use during install
+    #
+    def installation_options
+      podfile.installation_options
     end
 
     #-------------------------------------------------------------------------#
