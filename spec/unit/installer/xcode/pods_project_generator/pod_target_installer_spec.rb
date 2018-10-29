@@ -47,7 +47,7 @@ module Pod
 
             it 'sets the platform and the deployment target for iOS targets that require frameworks' do
               @pod_target.stubs(:platform).returns(Platform.new(:ios, '8.0'))
-              @pod_target.stubs(:requires_frameworks?).returns(true)
+              @pod_target.stubs(:type).returns(Target::Type.dynamic_framework)
               @installer.install!
               target = @project.targets.first
               target.platform_name.should == :ios
@@ -110,7 +110,7 @@ module Pod
 
             describe 'headers folder paths' do
               it 'does not set them for framework targets' do
-                @pod_target.stubs(:requires_frameworks? => true)
+                @pod_target.stubs(:type => Target::Type.dynamic_framework)
                 @installer.install!
                 @project.targets.first.build_configurations.each do |config|
                   config.build_settings['PUBLIC_HEADERS_FOLDER_PATH'].should.be.nil
@@ -336,7 +336,7 @@ module Pod
               end
 
               it 'does not add test header imports to umbrella header' do
-                @watermelon_pod_target.stubs(:requires_frameworks?).returns(true)
+                @watermelon_pod_target.stubs(:type).returns(Target::Type.dynamic_framework)
                 @installer.install!
                 content = @watermelon_pod_target.umbrella_header_path.read
                 content.should.not =~ /"CoconutTestHeader.h"/
@@ -344,7 +344,7 @@ module Pod
 
               it 'uses header_dir to umbrella header imports' do
                 @watermelon_pod_target.file_accessors.first.spec_consumer.stubs(:header_dir).returns('Watermelon')
-                @watermelon_pod_target.stubs(:requires_frameworks?).returns(false)
+                @watermelon_pod_target.stubs(:type).returns(Target::Type.static_library)
                 @watermelon_pod_target.stubs(:defines_module?).returns(true)
                 @installer.install!
                 content = @watermelon_pod_target.umbrella_header_path.read
@@ -354,7 +354,7 @@ module Pod
               it 'uses header_dir and header_mappings_dir to umbrella header imports' do
                 @watermelon_pod_target.file_accessors.first.spec_consumer.stubs(:header_dir).returns('Watermelon2')
                 @watermelon_pod_target.file_accessors.first.spec_consumer.stubs(:header_mappings_dir).returns('Classes')
-                @watermelon_pod_target.stubs(:requires_frameworks?).returns(false)
+                @watermelon_pod_target.stubs(:type).returns(Target::Type.static_library)
                 @watermelon_pod_target.stubs(:defines_module?).returns(true)
                 @installer.install!
                 content = @watermelon_pod_target.umbrella_header_path.read
@@ -363,7 +363,7 @@ module Pod
 
               it 'does not use header_dir to umbrella header imports' do
                 @watermelon_pod_target.file_accessors.first.spec_consumer.stubs(:header_dir).returns('Watermelon')
-                @watermelon_pod_target.stubs(:requires_frameworks?).returns(true)
+                @watermelon_pod_target.stubs(:type).returns(Target::Type.dynamic_framework)
                 @watermelon_pod_target.stubs(:defines_module?).returns(true)
                 @installer.install!
                 content = @watermelon_pod_target.umbrella_header_path.read
@@ -384,7 +384,7 @@ module Pod
               end
 
               it 'creates embed frameworks script for test target' do
-                @watermelon_pod_target.stubs(:requires_frameworks? => true)
+                @watermelon_pod_target.stubs(:type => Target::Type.dynamic_framework)
                 @installer.install!
                 script_path = @watermelon_pod_target.embed_frameworks_script_path_for_test_spec(@watermelon_pod_target.test_specs.first)
                 script = script_path.read
@@ -443,7 +443,7 @@ module Pod
               end
 
               it 'raises when references are missing for non-source files' do
-                @minions_pod_target.stubs(:requires_frameworks?).returns(true)
+                @minions_pod_target.stubs(:type).returns(Target::Type.dynamic_framework)
                 exception = lambda { @installer.install! }.should.raise Informative
                 exception.message.should.include "Unable to find other source ref for #{@first_json_file} for target MinionsLib."
               end
@@ -557,8 +557,7 @@ module Pod
               end
 
               it 'headers are public if podspec directory is symlinked for static lib' do
-                @pod_target.stubs(:static_framework?).returns(true)
-                @pod_target.stubs(:requires_frameworks?).returns(true)
+                @pod_target.stubs(:type => Target::Type.static_framework)
 
                 @installer.install!
                 @project.targets.first.headers_build_phase.files.find do |hf|
@@ -570,7 +569,7 @@ module Pod
             #--------------------------------------#
 
             it 'adds framework resources to the framework target' do
-              @pod_target.stubs(:requires_frameworks? => true)
+              @pod_target.stubs(:type => Target::Type.dynamic_framework)
               @installer.install!
               resources = @project.targets.first.resources_build_phase.files
               resources.count.should > 0
@@ -825,7 +824,7 @@ module Pod
             end
 
             it 'creates an info.plist file when frameworks are required' do
-              @pod_target.stubs(:requires_frameworks?).returns(true)
+              @pod_target.stubs(:type).returns(Target::Type.dynamic_framework)
               @installer.install!
               group = @project['Pods/BananaLib/Support Files']
               group.children.map(&:display_name).sort.should == [
@@ -838,7 +837,7 @@ module Pod
             end
 
             it 'does not create an Info.plist file if INFOPLIST_FILE is set' do
-              @pod_target.stubs(:requires_frameworks?).returns(true)
+              @pod_target.stubs(:type).returns(Target::Type.dynamic_framework)
               @spec.pod_target_xcconfig = {
                 'INFOPLIST_FILE' => 'somefile.plist',
               }
@@ -889,7 +888,7 @@ module Pod
 
                 @pod_target = fixture_pod_target('snake/snake.podspec', false,
                                                  { 'Debug' => :debug, 'Release' => :release }, [@target_definition])
-                @pod_target.stubs(:requires_frameworks? => true)
+                @pod_target.stubs(:type => Target::Type.dynamic_framework)
                 group = @project.group_for_spec('snake')
                 @pod_target.file_accessors.first.source_files.each do |file|
                   @project.add_file_reference(file, group)
@@ -957,7 +956,7 @@ module Pod
               end
 
               it 'verifies that headers in build phase for static libraries are all Project headers' do
-                @pod_target.stubs(:requires_frameworks?).returns(false)
+                @pod_target.stubs(:type).returns(Target::Type.static_library)
 
                 @installer.install!
 
@@ -1068,7 +1067,7 @@ module Pod
                 @project.add_pod_group('BananaLib', fixture('banana-lib'))
 
                 @pod_target = fixture_pod_target(@spec, false, 'Debug' => :debug, 'Release' => :release)
-                @pod_target.stubs(:requires_frameworks? => true)
+                @pod_target.stubs(:type => Target::Type.dynamic_framework)
                 target_installer = PodTargetInstaller.new(config.sandbox, @project, @pod_target)
 
                 # Use a file references installer to add the files so that the correct ones are added.

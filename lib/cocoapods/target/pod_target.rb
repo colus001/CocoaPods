@@ -71,7 +71,7 @@ module Pod
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs,
                    target_definitions, file_accessors = [], scope_suffix = nil,
-                   type: Type.new(:linkage => host_requires_frameworks ? :dynamic : :static, :packaging => host_requires_frameworks ? :framework : :library))
+                   type: Target::Type.infer_from_spec(specs.first, :host_requires_frameworks => host_requires_frameworks))
       super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, :type => type)
       raise "Can't initialize a PodTarget without specs!" if specs.nil? || specs.empty?
       raise "Can't initialize a PodTarget without TargetDefinition!" if target_definitions.nil? || target_definitions.empty?

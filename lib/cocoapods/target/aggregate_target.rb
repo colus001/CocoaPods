@@ -67,7 +67,7 @@ module Pod
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, target_definition,
                    client_root, user_project, user_target_uuids, pod_targets_for_build_configuration,
-                   type: Type.new(:linkage => host_requires_frameworks ? :dynamic : :static, :packaging => host_requires_frameworks ? :framework : :library))
+                   type: Target::Type.infer_from_spec(nil, :host_requires_frameworks => host_requires_frameworks))
       super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, :type => type)
       raise "Can't initialize an AggregateTarget without a TargetDefinition!" if target_definition.nil?
       raise "Can't initialize an AggregateTarget with an abstract TargetDefinition!" if target_definition.abstract?

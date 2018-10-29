@@ -1,7 +1,7 @@
 module Pod
   class Target
     class Type
-      TYPE_METHODS = [].freeze
+      TYPE_METHODS = [] # rubocop:disable Style/MutableConstant
 
       KNOWN_PACKAGING_OPTIONS = %i(library framework).freeze
       KNOWN_LINKAGE_OPTIONS = %i(static dynamic).freeze
@@ -35,6 +35,19 @@ module Pod
         @packaging = packaging
         @linkage = linkage
         @hash = packaging.hash ^ linkage.hash
+      end
+
+      def self.infer_from_spec(spec, host_requires_frameworks: false)
+        if host_requires_frameworks
+          root_spec = spec && spec.root
+          if root_spec && root_spec.static_framework
+            static_framework
+          else
+            dynamic_framework
+          end
+        else
+          static_library
+        end
       end
 
       def self.static_library

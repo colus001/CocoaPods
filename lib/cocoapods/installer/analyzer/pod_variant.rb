@@ -33,9 +33,9 @@ module Pod
         # @param [Array<Specification>] test_specs @see #test_specs
         # @param [Array<Specification>] app_specs  @see #app_specs
         # @param [Platform] platform               @see #platform
-        # @param [Target::Type] typ                @see #type?
+        # @param [Target::Type] type               @see #type?
         #
-        def initialize(specs, test_specs, app_specs, platform, type)
+        def initialize(specs, test_specs, app_specs, platform, type = Target::Type.static_library)
           @specs = specs
           @test_specs = test_specs
           @app_specs = app_specs

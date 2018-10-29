@@ -414,7 +414,7 @@ module Pod
           embedded_targets = aggregate_targets.select(&:requires_host_target?)
           analyze_host_targets_in_podfile(aggregate_targets, embedded_targets)
 
-          use_frameworks_embedded_targets, non_use_frameworks_embedded_targets = embedded_targets.partition(&:build_as_static?)
+          use_frameworks_embedded_targets, non_use_frameworks_embedded_targets = embedded_targets.partition(&:host_requires_frameworks?)
           aggregate_targets = aggregate_targets.map do |aggregate_target|
             # For targets that require frameworks, we always have to copy their pods to their
             # host targets because those frameworks will all be loaded from the host target's bundle
@@ -570,7 +570,7 @@ module Pod
               library_specs = all_specs_by_type[:library] || []
               test_specs = all_specs_by_type[:test] || []
               app_specs = all_specs_by_type[:app] || []
-              target_type = Target::Type.new(:linkage => (!target_definition.uses_frameworks? || root_spec.static_framework) ? :static : :dynamic, :packaging => target_definition.uses_frameworks? ? :framework : :library)
+              target_type = Target::Type.infer_from_spec(root_spec, :host_requires_frameworks => target_definition.uses_frameworks?)
               pod_variant = PodVariant.new(library_specs, test_specs, app_specs, target_definition.platform, target_type)
               hash[root_spec] ||= {}
               (hash[root_spec][pod_variant] ||= []) << target_definition
@@ -614,8 +614,8 @@ module Pod
           resolver_specs_by_target.flat_map do |target_definition, specs|
             grouped_specs = specs.group_by(&:root).values.uniq
             pod_targets = grouped_specs.flat_map do |pod_specs|
-              target_type = Target::Type.new(:linkage => (!target_definition.uses_frameworks? || pod_specs.first.root.static_framework) ? :static : :dynamic, :packaging => target_definition.uses_frameworks? ? :framework : :library)
-              generate_pod_target([target_definition], target_inspections, pod_specs.map(&:spec), type: target_type).scoped(dedupe_cache)
+              target_type = Target::Type.infer_from_spec(pod_specs.first, :host_requires_frameworks => target_definition.uses_frameworks?)
+              generate_pod_target([target_definition], target_inspections, pod_specs.map(&:spec), :type => target_type).scoped(dedupe_cache)
             end
 
             pod_targets.each do |target|

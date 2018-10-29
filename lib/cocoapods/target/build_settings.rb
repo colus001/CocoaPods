@@ -625,14 +625,16 @@ module Pod
         # @return [Array<String>]
         define_build_settings_method :static_libraries_to_import, :memoized => true do
           static_libraries_to_import = vendored_static_libraries.map { |l| File.basename(l, l.extname).sub(/\Alib/, '') }
-          static_libraries_to_import << target.product_basename if target.should_build? && target.build_as_static_framework?
+          static_libraries_to_import << target.product_basename if target.should_build? && target.build_as_static_library?
           static_libraries_to_import
         end
 
         # @return [Array<String>]
         define_build_settings_method :dynamic_libraries_to_import, :memoized => true do
-          vendored_dynamic_libraries.map { |l| File.basename(l, l.extname).sub(/\Alib/, '') } +
-          spec_consumers.flat_map(&:libraries)
+          dynamic_libraries_to_import = vendored_dynamic_libraries.map { |l| File.basename(l, l.extname).sub(/\Alib/, '') }
+          dynamic_libraries_to_import.concat spec_consumers.flat_map(&:libraries)
+          dynamic_libraries_to_import << target.product_basename if target.should_build? && target.build_as_dynamic_library?
+          dynamic_libraries_to_import
         end
 
         # @return [Array<String>]
@@ -694,6 +696,7 @@ module Pod
         # @return [Array<String>]
         define_build_settings_method :module_map_file_to_import, :memoized => true do
           return unless target.should_build?
+          return if target.build_as_framework? # framework module maps are automatically discovered
           return unless target.defines_module?
 
           if target.uses_swift?
@@ -1021,7 +1024,7 @@ module Pod
 
         # @return [Array<String>]
         define_build_settings_method :ld_runpath_search_paths, :build_setting => true, :memoized => true, :uniqued => true do
-          return unless target.build_as_dynamic? || any_vendored_dynamic_artifacts?
+          return unless pod_targets.any?(&:build_as_dynamic?) || any_vendored_dynamic_artifacts?
           symbol_type = target.user_targets.map(&:symbol_type).uniq.first
           test_bundle = symbol_type == :octest_bundle || symbol_type == :unit_test_bundle || symbol_type == :ui_test_bundle
           _ld_runpath_search_paths(:requires_host_target => target.requires_host_target?, :test_bundle => test_bundle)
@@ -1031,15 +1034,24 @@ module Pod
         define_build_settings_method :any_vendored_dynamic_artifacts?, :memoized => true do
           pod_targets.any? do |pt|
             pt.file_accessors.any? do |fa|
-              fa.vendored_dynamic_artifacts.any?
+              !fa.vendored_dynamic_artifacts.empty?
+            end
+          end
+        end
+
+        # @return [Boolean]
+        define_build_settings_method :any_vendored_static_artifacts?, :memoized => true do
+          pod_targets.any? do |pt|
+            pt.file_accessors.any? do |fa|
+              !fa.vendored_static_artifacts.empty?
             end
           end
         end
 
         # @return [Boolean]
         define_build_settings_method :requires_objc_linker_flag?, :memoized => true do
-          pod_targets.any?(&:static_framework?) ||
-            pod_targets.flat_map(&:file_accessors).any? { |fa| !fa.vendored_static_artifacts.empty? }
+          pod_targets.any?(&:build_as_static?) ||
+            any_vendored_static_artifacts?
         end
 
         # @return [Boolean]

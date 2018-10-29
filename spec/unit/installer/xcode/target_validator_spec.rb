@@ -229,7 +229,7 @@ module Pod
           end
 
           it 'allows transitive static dependencies when building a static framework' do
-            PodTarget.any_instance.stubs(:static_framework? => true)
+            PodTarget.any_instance.stubs(:type => Target::Type.static_framework)
             Sandbox::FileAccessor.any_instance.stubs(:vendored_libraries).returns([@lib_thing])
             @validator = create_validator(config.sandbox, @podfile, @lockfile)
             should.not.raise(Informative) { @validator.validate! }
