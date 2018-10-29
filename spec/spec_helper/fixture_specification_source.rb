@@ -6,12 +6,12 @@ require_relative 'fixture'
 # network connections.
 #
 module Pod
-    class Specification
-      def source
-        fixture = SpecHelper.fixture("integration/#{name}")
-        result = super
-        result[:git] = fixture.to_s if fixture.exist?
-        result
-      end
+  class Specification
+    def source
+      fixture = SpecHelper.fixture("integration/#{name}")
+      result = super
+      result[:git] = fixture.to_s if fixture.exist?
+      result
     end
+  end
   end

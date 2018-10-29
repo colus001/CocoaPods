@@ -71,7 +71,7 @@ module Pod
             aggregate_target.user_build_configurations.each_key do |config|
               pod_targets = aggregate_target.pod_targets_for_build_configuration(config)
               built_targets, unbuilt_targets = pod_targets.partition(&:should_build?)
-              dynamic_pod_targets = built_targets.select { |pt| pt.build_as_dynamic? }
+              dynamic_pod_targets = built_targets.select(&:build_as_dynamic?)
 
               dependencies = dynamic_pod_targets.flat_map(&:dependencies)
               depended_upon_targets = unbuilt_targets.select { |t| dependencies.include?(t.pod_name) }
@@ -82,7 +82,7 @@ module Pod
                   "transitive dependencies that include statically linked binaries: (#{static_libs.to_sentence})"
               end
 
-              static_deps = dynamic_pod_targets.flat_map(&:recursive_dependent_targets).select { |pt| pt.build_as_static? }.uniq
+              static_deps = dynamic_pod_targets.flat_map(&:recursive_dependent_targets).select(&:build_as_static?).uniq
               unless static_deps.empty?
                 raise Informative, "The '#{aggregate_target.label}' target has " \
                   "transitive dependencies that include statically linked binaries: (#{static_deps.flat_map(&:name).to_sentence})"

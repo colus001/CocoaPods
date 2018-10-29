@@ -67,8 +67,8 @@ module Pod
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, target_definition,
                    client_root, user_project, user_target_uuids, pod_targets_for_build_configuration,
-                   type: Type.new(linkage: host_requires_frameworks ? :dynamic : :static, packaging: host_requires_frameworks ? :framework : :library))
-      super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, type: type)
+                   type: Type.new(:linkage => host_requires_frameworks ? :dynamic : :static, :packaging => host_requires_frameworks ? :framework : :library))
+      super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, :type => type)
       raise "Can't initialize an AggregateTarget without a TargetDefinition!" if target_definition.nil?
       raise "Can't initialize an AggregateTarget with an abstract TargetDefinition!" if target_definition.abstract?
       @target_definition = target_definition
@@ -94,7 +94,7 @@ module Pod
         (before + after).uniq
       end
       AggregateTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform,
-                          target_definition, client_root, user_project, user_target_uuids, merged, type: type).tap do |aggregate_target|
+                          target_definition, client_root, user_project, user_target_uuids, merged, :type => type).tap do |aggregate_target|
         aggregate_target.search_paths_aggregate_targets.concat(search_paths_aggregate_targets).freeze
       end
     end

@@ -71,8 +71,8 @@ module Pod
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs,
                    target_definitions, file_accessors = [], scope_suffix = nil,
-                   type: Type.new(linkage: host_requires_frameworks ? :dynamic : :static, packaging: host_requires_frameworks ? :framework : :library))
-      super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, type: type)
+                   type: Type.new(:linkage => host_requires_frameworks ? :dynamic : :static, :packaging => host_requires_frameworks ? :framework : :library))
+      super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, :type => type)
       raise "Can't initialize a PodTarget without specs!" if specs.nil? || specs.empty?
       raise "Can't initialize a PodTarget without TargetDefinition!" if target_definitions.nil? || target_definitions.empty?
       raise "Can't initialize a PodTarget with only abstract TargetDefinitions!" if target_definitions.all?(&:abstract?)
@@ -106,7 +106,7 @@ module Pod
           cache[cache_key]
         else
           target = PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs, [target_definition], file_accessors, target_definition.label,
-            type: type)
+                                 :type => type)
           target.dependent_targets = dependent_targets.flat_map { |pt| pt.scoped(cache) }.select { |pt| pt.target_definitions == [target_definition] }
           target.test_dependent_targets_by_spec_name = Hash[test_dependent_targets_by_spec_name.map do |spec_name, test_pod_targets|
             scoped_test_pod_targets = test_pod_targets.flat_map do |test_pod_target|

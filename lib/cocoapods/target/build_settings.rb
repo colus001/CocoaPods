@@ -552,7 +552,7 @@ module Pod
 
         # @return [Array<String>]
         define_build_settings_method :weak_frameworks, :memoized => true do
-          return [] if (target.build_as_static?) && library_xcconfig?
+          return [] if target.build_as_static? && library_xcconfig?
 
           weak_frameworks = spec_consumers.flat_map(&:weak_frameworks)
           weak_frameworks.concat dependent_targets.flat_map { |pt| pt.build_settings.weak_frameworks_to_import }
@@ -614,7 +614,7 @@ module Pod
 
         # @return [Array<String>]
         define_build_settings_method :libraries, :memoized => true, :sorted => true, :uniqued => true do
-          return [] if library_xcconfig? && (target.build_as_static?)
+          return [] if library_xcconfig? && target.build_as_static?
 
           libraries = libraries_to_import.dup
           libraries.concat dependent_targets.flat_map { |pt| pt.build_settings.dynamic_libraries_to_import }
@@ -642,7 +642,7 @@ module Pod
 
         # @return [Array<String>]
         define_build_settings_method :library_search_paths, :build_setting => true, :memoized => true, :sorted => true, :uniqued => true do
-          return [] if library_xcconfig? && (target.build_as_static?)
+          return [] if library_xcconfig? && target.build_as_static?
 
           vendored = library_search_paths_to_import.dup
           vendored.concat dependent_targets.flat_map { |t| t.build_settings.vendored_dynamic_library_search_paths }

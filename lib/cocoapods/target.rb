@@ -48,7 +48,6 @@ module Pod
 
     extend Forwardable
 
-
     # @method build_as_dynamic?
     # @return [Boolean] whether the target is built as a dynamic
     def_instance_delegator :type, :dynamic?, :build_as_dynamic?
@@ -90,7 +89,7 @@ module Pod
     # @param [Platform] platform @see #platform
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform,
-      type: Type.new(linkage: host_requires_frameworks ? :dynamic : :static, packaging: host_requires_frameworks ? :framework : :library))
+                   type: Type.new(:linkage => host_requires_frameworks ? :dynamic : :static, :packaging => host_requires_frameworks ? :framework : :library))
       @sandbox = sandbox
       @host_requires_frameworks = host_requires_frameworks
       @user_build_configurations = user_build_configurations
