@@ -1,5 +1,3 @@
-require 'forwardable'
-
 require 'cocoapods/target/build_settings'
 require 'cocoapods/target/type'
 
@@ -43,42 +41,58 @@ module Pod
     #
     attr_reader :build_settings
 
+    # @return [Type] the build type for this target.
+    #
     attr_reader :type
     private :type
 
-    extend Forwardable
+    # @return [Boolean] whether the target is built dynamically
+    #
+    def build_as_dynamic?
+      type.dynamic?
+    end
 
-    # @method build_as_dynamic?
-    # @return [Boolean] whether the target is built as a dynamic
-    def_instance_delegator :type, :dynamic?, :build_as_dynamic?
+    # @return [Boolean] whether the target is built as a dynamic framework
+    #
+    def build_as_dynamic_framework?
+      type.dynamic_framework?
+    end
 
-    # @method build_as_dynamic_framework?
-    # @return [Boolean] whether the target is built as a dynamic_framework
-    def_instance_delegator :type, :dynamic_framework?, :build_as_dynamic_framework?
+    # @return [Boolean] whether the target is built as a dynamic library
+    #
+    def build_as_dynamic_library?
+      type.dynamic_library?
+    end
 
-    # @method build_as_dynamic_library?
-    # @return [Boolean] whether the target is built as a dynamic_library
-    def_instance_delegator :type, :dynamic_library?, :build_as_dynamic_library?
-
-    # @method build_as_framework?
     # @return [Boolean] whether the target is built as a framework
-    def_instance_delegator :type, :framework?, :build_as_framework?
+    #
+    def build_as_framework?
+      type.framework?
+    end
 
-    # @method build_as_library?
     # @return [Boolean] whether the target is built as a library
-    def_instance_delegator :type, :library?, :build_as_library?
+    #
+    def build_as_library?
+      type.library?
+    end
 
-    # @method build_as_static?
-    # @return [Boolean] whether the target is built as a static
-    def_instance_delegator :type, :static?, :build_as_static?
+    # @return [Boolean] whether the target is built statically
+    #
+    def build_as_static?
+      type.static?
+    end
 
-    # @method build_as_static_framework?
-    # @return [Boolean] whether the target is built as a static_framework
-    def_instance_delegator :type, :static_framework?, :build_as_static_framework?
+    # @return [Boolean] whether the target is built as a static framework
+    #
+    def build_as_static_framework?
+      type.static_framework?
+    end
 
-    # @method build_as_static_library?
-    # @return [Boolean] whether the target is built as a static_library
-    def_instance_delegator :type, :static_library?, :build_as_static_library?
+    # @return [Boolean] whether the target is built as a static library
+    #
+    def build_as_static_library?
+      type.static_library?
+    end
 
     # Initialize a new target
     #
